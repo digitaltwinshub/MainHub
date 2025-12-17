@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 
 const DigitalTwinsHub = () => {
@@ -6,7 +6,6 @@ const DigitalTwinsHub = () => {
   const [showProposal, setShowProposal] = useState(false);
   const [showTerms, setShowTerms] = useState(false);
 
-  const [projectsInView, setProjectsInView] = useState(false);
   const [leadersInView, setLeadersInView] = useState(false);
   const [ctaInView, setCtaInView] = useState(false);
 
@@ -44,7 +43,6 @@ const DigitalTwinsHub = () => {
 
   const [savedProjects, setSavedProjects] = useState([]);
   const [featuredProjects, setFeaturedProjects] = useState([]);
-  const [tutorialProjects, setTutorialProjects] = useState([]);
   const [projectOfMonth, setProjectOfMonth] = useState(null);
 
   useEffect(() => {
@@ -69,10 +67,6 @@ const DigitalTwinsHub = () => {
       const pickedFeatured = sourceForFeatured.slice(0, Math.min(3, sourceForFeatured.length));
       setFeaturedProjects(pickedFeatured);
 
-      const remaining = shuffled.slice(pickedFeatured.length);
-      const tutorialsSource = remaining.length > 0 ? remaining : shuffled;
-      setTutorialProjects(tutorialsSource.slice(0, Math.min(4, tutorialsSource.length)));
-
       setProjectOfMonth(shuffled[0]);
     } catch {
       setSavedProjects([]);
@@ -92,7 +86,6 @@ const DigitalTwinsHub = () => {
       (entries) => {
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
-            setProjectsInView(true);
             observer.unobserve(entry.target);
           }
         });
@@ -169,15 +162,13 @@ const DigitalTwinsHub = () => {
     }, 250);
   };
 
-  const prevSlide = () => {
-    const nextIndex = (active - 1 + leaders.length) % leaders.length;
-    goTo(nextIndex);
-  };
-
-  const nextSlide = () => {
-    const nextIndex = (active + 1) % leaders.length;
-    goTo(nextIndex);
-  };
+  const nextSlide = useCallback(() => {
+    setIsFading(true);
+    setTimeout(() => {
+      setActive((prev) => (prev + 1) % leaders.length);
+      setIsFading(false);
+    }, 250);
+  }, [leaders.length]);
 
   useEffect(() => {
     if (isPaused) return;
@@ -185,7 +176,7 @@ const DigitalTwinsHub = () => {
       nextSlide();
     }, 2000);
     return () => clearInterval(id);
-  }, [active, isPaused]);
+  }, [isPaused, nextSlide]);
 
   return (
     <div
@@ -674,7 +665,14 @@ const DigitalTwinsHub = () => {
         <div className="max-w-7xl mx-auto px-6 py-8 flex flex-col sm:flex-row items-center justify-between gap-4">
           <span className="text-sm" style={{ fontFamily: 'Poppins, ui-sans-serif' }}> {new Date().getFullYear()} Digital Twins Hub</span>
           <div className="flex items-center gap-6 text-sm">
-            <a href="#" className="hover:text-white">Privacy</a>
+            <button
+              type="button"
+              onClick={() => setShowTerms(true)}
+              className="hover:text-white cursor-pointer bg-transparent border-none p-0 m-0 text-inherit"
+              style={{ fontFamily: 'Poppins, ui-sans-serif' }}
+            >
+              Privacy
+            </button>
             <button
               type="button"
               onClick={() => setShowTerms(true)}

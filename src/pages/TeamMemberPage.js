@@ -98,6 +98,7 @@ const TeamMemberPage = () => {
   const skillsRef = useRef(null);
   const memberProjectsRef = useRef(null);
   const experienceRef = useRef(null);
+  const memberName = member && member.name ? member.name : '';
   
   // Resolve member: try dynamic storage first, then fallback to static TEAM (default Omid)
   useEffect(() => {
@@ -184,16 +185,16 @@ const TeamMemberPage = () => {
 
   // Load projects owned by this member
   useEffect(() => {
-    if (!member || !member.name) return;
+    if (!memberName) return;
     try {
       const stored = JSON.parse(localStorage.getItem('dt_projects') || '[]');
-      const normalizedName = member.name.trim().toLowerCase();
+      const normalizedName = memberName.trim().toLowerCase();
       const filtered = stored.filter((p) => (p.owner || '').trim().toLowerCase() === normalizedName);
       setMemberProjects(filtered);
     } catch {
       setMemberProjects([]);
     }
-  }, [member && member.name]);
+  }, [memberName]);
 
   return (
     <div

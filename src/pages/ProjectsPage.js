@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { jsPDF } from 'jspdf';
 import { useNotifications } from '../context/NotificationContext';
 import AddProjectForm from '../components/AddProjectForm';
@@ -73,9 +73,8 @@ const ProjectsPage = () => {
   const [mounted, setMounted] = useState(false);
   const [editMode, setEditMode] = useState(false); // public view vs admin edit
   // Hooks must be called unconditionally
-const { notifySystem } = useNotifications();
+  const { notifySystem } = useNotifications();
   const location = useLocation();
-  const navigate = useNavigate();
 
   // Load projects from localStorage (safely) and upgrade legacy ones to include projectType
   useEffect(() => {
@@ -246,8 +245,7 @@ const { notifySystem } = useNotifications();
       }, 0);
     }
     return () => {
-      const el2 = previewScrollRef.current;
-      if (el2) localStorage.setItem(key, String(el2.scrollTop));
+      if (el) localStorage.setItem(key, String(el.scrollTop));
     };
   }, [previewing]);
 
@@ -343,7 +341,7 @@ const { notifySystem } = useNotifications();
       const footerY = doc.internal.pageSize.getHeight() - marginTop;
       doc.text(generatedAt, marginX, footerY);
 
-      const safeTitle = (proj.title || 'project').replace(/[^a-z0-9\-]+/gi, '_');
+      const safeTitle = (proj.title || 'project').replace(/[^a-z0-9-]+/gi, '_');
       doc.save(`${safeTitle}.pdf`);
 
       notifySystem(
