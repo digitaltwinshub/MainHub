@@ -203,7 +203,7 @@ const DigitalTwinsHub = () => {
               className="mt-6 text-slate-200/90 text-lg md:text-xl leading-relaxed text-justify"
               style={{ fontFamily: 'Poppins, ui-sans-serif, system-ui' }}
             >
-              This platform is a collaborative space where innovators, researchers, and students can create, showcase, and track projects from any discipline. Whether it�s a software application, an AI experiment, a 3D architectural model, or a data-driven research study, users can add their projects, assign contributors, and monitor progress in real time. Explore ongoing work, learn from others, and contribute to exciting ideas across fields � all in one interactive and user-friendly environment.
+              This platform is a collaborative space where innovators, researchers, and students can create, showcase, and track projects from any discipline. Whether it's a software application, an AI experiment, a 3D architectural model, or a data-driven research study, users can add their projects, assign contributors, and monitor progress in real time. Explore ongoing work, learn from others, and contribute to exciting ideas across fields - all in one interactive and user-friendly environment.
             </p>
 
             <div className="mt-6 h-px w-full bg-gradient-to-r from-transparent via-slate-600/50 to-transparent" />
