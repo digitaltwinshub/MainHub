@@ -2,6 +2,7 @@
   "name": "digital-twins-hub",
   "version": "0.1.0",
   "private": true,
+  "homepage": "https://digitaltwinshub.github.io/MainHub",
   "dependencies": {
     "@heroicons/react": "^2.0.18",
     "@testing-library/jest-dom": "^5.17.0",
