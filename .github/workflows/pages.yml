@@ -20,27 +20,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Debug checked-out commit
-        run: |
-          git rev-parse HEAD
-          git status --porcelain
-
-      - name: Debug lint markers
-        run: |
-          node --version
-          npm --version
-          echo "Searching for lint markers in DigitalTwinsHub.js..."
-          grep -n "projectsInView" -n src/pages/DigitalTwinsHub.js || true
-          grep -n "tutorialProjects" -n src/pages/DigitalTwinsHub.js || true
-          grep -n "prevSlide" -n src/pages/DigitalTwinsHub.js || true
-          grep -n "href=\"#\"" -n src/pages/DigitalTwinsHub.js || true
-          echo "Searching for lint markers in ProjectsPage.js..."
-          grep -n "useNavigate" -n src/pages/ProjectsPage.js || true
-          grep -n "const navigate" -n src/pages/ProjectsPage.js || true
-          grep -n "previewScrollRef.current" -n src/pages/ProjectsPage.js || true
-          echo "Searching for lint markers in TeamMemberPage.js..."
-          grep -n "member && member.name" -n src/pages/TeamMemberPage.js || true
-
       - name: Use Node.js
         uses: actions/setup-node@v4
         with:
