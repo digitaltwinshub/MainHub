@@ -32,7 +32,7 @@ const TEAM = {
     role: 'Software Engineer • Project Lead',
     bio: `I worked at AT&T (DIRECTV) as a Quality Assurance on a project called SignalSaver / RainFade. This technology allows viewers to continue watching through the internet whenever there is a streaming interruption, or automatically switch if the satellite signal is lost.
 After two years of development and testing, we successfully released it to the market, and in 2024 the project received an award.`,
-    avatar: '/Team Members/Omid-Ahmadi.jpg.jpeg',
+    avatar: `${process.env.PUBLIC_URL}/Team%20Members/Omid-Ahmadi.jpg.jpeg`,
     highlights: [
       'Led SignalSaver / RainFade quality assurance at AT&T (DIRECTV).',
       'Helped launch an award-winning resiliency feature for satellite TV.',

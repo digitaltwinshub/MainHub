@@ -55,7 +55,7 @@ const DEFAULT_PROJECTS = [
 
 const FALLBACK_MEMBERS = [
   { name: 'Meri Sargsian', role: 'ShadeLA ProjectHUB', img: 'https://placehold.co/254x240', slug: 'meri-sargsian' },
-  { name: 'Omid Ahmadi', role: 'Software Engineer', img: '/Team Members/Omid-Ahmadi.jpg.jpeg', slug: 'omid-ahmadi' },
+  { name: 'Omid Ahmadi', role: 'Software Engineer', img: `${process.env.PUBLIC_URL}/Team%20Members/Omid-Ahmadi.jpg.jpeg`, slug: 'omid-ahmadi' },
   { name: 'Priya N', role: 'Systems', img: 'https://placehold.co/254x240', slug: 'priya-n' },
   { name: 'John Appleseed', role: 'Architecture', img: 'https://placehold.co/254x240', slug: 'john-appleseed' },
 ];

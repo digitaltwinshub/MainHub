@@ -17,21 +17,21 @@ const DigitalTwinsHub = () => {
     {
       name: 'Professor Marcela Oliva',
       title: 'Project Leader',
-      img: '/Professors/Professor Marcela Oliva.jpg',
+      img: `${process.env.PUBLIC_URL}/Professors/Professor Marcela Oliva.jpg`,
       desc:
-        'For over a decade, she led as the Knowledge Architect for the $9 billion Building Program at the Los Angeles Community College District, pioneering the development and rollout of the nations largest Digital Twin/Virtualization BIM/GIS System, aligned with National Intelligence Standards.'
+        'For over a decade, she led as the Knowledge Architect for the $9 billion Building Program at the Los Angeles Community College District, pioneering the development and rollout of the nations largest Digital Twin/Virtualization BIM/GIS System, aligned with National Intelligence Standards.'
     },
     {
       name: 'Professor Arthur Modine',
       title: 'Project Leader',
-      img: '/Professors/Professor Arthur Modine.png',
+      img: `${process.env.PUBLIC_URL}/Professors/Professor Arthur Modine.png`,
       desc:
         'Arthur is a designer and entrepreneur based in Los Angeles, California, specializing in architecture, software development and fashion design. He holds a Master\'s in Architecture from SCI-Arc, where was honored with a master\'s thesis award for developing a prototype of AURA, an innovative AR-based urban planning and geospatial analysis platform.'
     },
     {
       name: 'Professor Jack Rendler',
       title: 'Project Leader',
-      img: '/Professors/Professor Jack Rendler.jpg',
+      img: `${process.env.PUBLIC_URL}/Professors/Professor Jack Rendler.jpg`,
       desc:
         "Jack Oliva-Rendler is a designer and researcher exploring digital 3D modeling, GIS, and algorithmic systems for multi-scalar ecological and infrastructural solutions. He studied at SCI-Arc and earned a Master of Architecture from Harvard GSD. His practice focuses on fractal modeling and algorithmic simulation, which he teaches through Futurly, PA Academy, and LATTC."
     },
@@ -318,7 +318,7 @@ const DigitalTwinsHub = () => {
                 loop
                 muted
                 playsInline
-                src={(projectOfMonth && projectOfMonth.videoUrl) || '/Featured%20Projects/Mastering Agile Sprints_ A Manager\'s Guide.mp4'}
+                src={(projectOfMonth && projectOfMonth.videoUrl) || `${process.env.PUBLIC_URL}/Featured%20Projects/Mastering Agile Sprints_ A Manager's Guide.mp4`}
               />
             </div>
 
