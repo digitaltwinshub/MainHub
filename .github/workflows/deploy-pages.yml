@@ -30,6 +30,15 @@ jobs:
       - name: Install
         run: npm ci
 
+      - name: Verify Supabase env
+        run: |
+          if [ -z "$REACT_APP_SUPABASE_URL" ]; then echo "Missing REACT_APP_SUPABASE_URL"; exit 1; fi
+          if [ -z "$REACT_APP_SUPABASE_ANON_KEY" ]; then echo "Missing REACT_APP_SUPABASE_ANON_KEY"; exit 1; fi
+          echo "Supabase env present"
+        env:
+          REACT_APP_SUPABASE_URL: ${{ secrets.REACT_APP_SUPABASE_URL }}
+          REACT_APP_SUPABASE_ANON_KEY: ${{ secrets.REACT_APP_SUPABASE_ANON_KEY }}
+
       - name: Build
         run: npm run build
         env:
