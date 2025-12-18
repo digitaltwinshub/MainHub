@@ -34,66 +34,13 @@ export default function AddProjectPage() {
   };
 
   const saveProject = () => {
-    if (!form.title.trim() || !form.category.trim() || !form.goal.trim()) {
-      notifySystem('Validation Error', 'Please fill required fields: Project Title, Category, and Goal.', 'error');
-      return;
-    }
-    let stored = [];
-    try {
-      stored = JSON.parse(localStorage.getItem('dt_projects') || '[]');
-    } catch {
-      stored = [];
-    }
-    const project = {
-      id: Date.now(),
-      ...form,
-      createdAt: new Date().toISOString(),
-    };
-    try {
-      localStorage.setItem('dt_projects', JSON.stringify([project, ...stored]));
-    } catch (e) {
-      notifySystem('Storage Full', 'Could not save project because browser storage is full. Try deleting some projects or clearing site data.', 'error');
-      return;
-    }
-
-    // Also auto-create/update a team member card when team member info is provided
-    if (form.teamMemberFirstName && form.teamMemberFirstName.trim()) {
-      const first = form.teamMemberFirstName.trim();
-      const last = (form.teamMemberLastName || '').trim();
-      const name = [first, last].filter(Boolean).join(' ');
-      const slugBase = [first, last].filter(Boolean).join('-').toLowerCase();
-      const slug = slugBase || first.toLowerCase();
-      try {
-        const raw = localStorage.getItem('dt_team_members') || '[]';
-        const existing = Array.isArray(JSON.parse(raw)) ? JSON.parse(raw) : [];
-        const idx = existing.findIndex((m) => m.slug === slug);
-        const member = {
-          slug,
-          name,
-          role: form.teamMemberRole || '',
-          bio: form.teamMemberDescription || '',
-          avatar: '',
-        };
-        if (idx >= 0) {
-          existing[idx] = { ...existing[idx], ...member };
-        } else {
-          existing.push(member);
-        }
-        localStorage.setItem('dt_team_members', JSON.stringify(existing));
-      } catch {
-        // ignore team-member save errors; project is already saved
-      }
-    }
+    notifySystem('Repo Update Required', 'To add a project for everyone, edit src/data/projectsCatalog.js and redeploy.', 'info');
     setSaved(true);
-    
-    // Send notification
     notifyProjectAdded(form.title);
-    
-    // Show success message and navigate
     setTimeout(() => {
       setSaved(false);
       navigate('/projects');
-    }, 2000);
+    }, 1200);
   };
 
   const inputCls = 'w-full rounded-xl border border-black/10 bg-white px-4 py-3 focus:outline-none focus:ring-2 focus:ring-black/20';
@@ -105,7 +52,7 @@ export default function AddProjectPage() {
     <div className="min-h-screen bg-neutral-100">
       <div className="max-w-5xl mx-auto px-6 py-10">
         <h1 className="text-4xl md:text-5xl text-black" style={{ fontFamily: 'Poppins, ui-sans-serif' }}>Add Project</h1>
-        <p className="mt-2 text-black/70">Create a polished record for your project. All fields save locally in your browser.</p>
+        <p className="mt-2 text-black/70">This site uses a repo-backed catalog. To add a project for everyone, edit src/data/projectsCatalog.js and redeploy.</p>
 
         <div className="mt-10 grid grid-cols-1 gap-8">
           <div>
@@ -230,7 +177,7 @@ export default function AddProjectPage() {
             <button onClick={saveProject} className="rounded-full bg-black text-white px-6 py-3 hover:bg-gray-900 transition-colors" style={{ fontFamily: 'Poppins, ui-sans-serif' }}>
               💾 Save Project
             </button>
-            {saved && <span className="text-green-600">Saved locally</span>}
+            {saved && <span className="text-green-600">Submitted</span>}
             <button onClick={() => navigate(-1)} className="rounded-full bg-white text-black border border-black/10 px-6 py-3 hover:bg-gray-100 transition-colors" style={{ fontFamily: 'Poppins, ui-sans-serif' }}>
               Back
             </button>

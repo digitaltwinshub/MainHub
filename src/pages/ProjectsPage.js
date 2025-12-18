@@ -2,56 +2,9 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { jsPDF } from 'jspdf';
 import { useNotifications } from '../context/NotificationContext';
-import AddProjectForm from '../components/AddProjectForm';
+import { PROJECTS_CATALOG } from '../data/projectsCatalog';
 
 const TEAM_STORAGE_KEY = 'dt_team_members';
-
-const DEFAULT_PROJECTS = [
-  {
-    id: 1,
-    title: 'Jira Digital Twin',
-    category: 'Computer Science',
-    owner: 'Internal',
-    repoUrl: '',
-    goal: 'A flagship twin of our Jira workflows, showcasing how project management systems can be modeled as digital twins for portfolio visibility.',
-    image: '',
-    status: 'In Progress',
-    projectType: 'flagship',
-  },
-  {
-    id: 2,
-    title: 'USGBC Engagement Twin',
-    category: 'Sustainability',
-    owner: 'Partnerships',
-    repoUrl: '',
-    goal: 'A reference twin for USGBC-style engagement data, visualizing projects, certifications, and performance insights in one hub.',
-    image: '',
-    status: 'Idea',
-    projectType: 'flagship',
-  },
-  {
-    id: 3,
-    title: 'Alpha Earth Sandbox',
-    category: 'Architecture',
-    owner: 'Lab',
-    repoUrl: '',
-    goal: 'An experimental sandbox twin where new structures, modules, and data types can be prototyped before going live.',
-    image: '',
-    status: 'Idea',
-    projectType: 'flagship',
-  },
-  {
-    id: 1001,
-    title: 'User Project',
-    category: 'Architecture',
-    owner: 'You',
-    repoUrl: '',
-    goal: 'A starter user project that demonstrates how to describe goals, structure, and modules for your own digital twin.',
-    image: '',
-    status: 'Idea',
-    projectType: 'user',
-  },
-];
 
 const FALLBACK_MEMBERS = [
   { name: 'Meri Sargsian', role: 'ShadeLA ProjectHUB', img: 'https://placehold.co/254x240', slug: 'meri-sargsian' },
@@ -61,9 +14,7 @@ const FALLBACK_MEMBERS = [
 ];
 
 const ProjectsPage = () => {
-  const [savedProjects, setSavedProjects] = useState([]);
-  const [showModal, setShowModal] = useState(false);
-  const [editing, setEditing] = useState(null);
+  const [savedProjects, setSavedProjects] = useState(PROJECTS_CATALOG);
   const [previewing, setPreviewing] = useState(null);
   const previewScrollRef = useRef(null);
   const [showEmbeddedProject, setShowEmbeddedProject] = useState(false);
@@ -76,47 +27,20 @@ const ProjectsPage = () => {
   const { notifySystem } = useNotifications();
   const location = useLocation();
 
-  // Load projects from localStorage (safely) and upgrade legacy ones to include projectType
+  // Load repo-backed catalog projects (always available)
   useEffect(() => {
     try {
-      const raw = localStorage.getItem('dt_projects');
-      const parsed = raw ? JSON.parse(raw) : [];
-      let list = Array.isArray(parsed) ? parsed : [];
-
-      // If there are no projects stored yet, seed with defaults
-      if (!list || list.length === 0) {
-        list = DEFAULT_PROJECTS;
-        try {
-          localStorage.setItem('dt_projects', JSON.stringify(list));
-        } catch (e) {
-          // if we can't write, still proceed with in-memory defaults
-        }
-      }
-
-      // Automatically mark known legacy flagship projects
-      const flagshipTitles = ['Jira', 'USGBC', 'Alpha Earth'];
-      let changed = false;
-      list = list.map((p) => {
-        if (!p.projectType && flagshipTitles.includes(p.title)) {
-          changed = true;
-          return { ...p, projectType: 'flagship' };
-        }
-        return p;
-      });
-
-      if (changed) {
-        try {
-          localStorage.setItem('dt_projects', JSON.stringify(list));
-        } catch (e) {
-          // if we can't write, still proceed with upgraded in-memory list
-        }
-      }
-
-      setSavedProjects(list);
+      const base = Array.isArray(PROJECTS_CATALOG) ? PROJECTS_CATALOG : [];
+      setSavedProjects(base);
     } catch (e) {
       setSavedProjects([]);
     }
   }, []);
+
+  const isCatalogProject = (id) => {
+    const base = Array.isArray(PROJECTS_CATALOG) ? PROJECTS_CATALOG : [];
+    return base.some((p) => String(p.id) === String(id));
+  };
 
   // If navigated here with a projectId in router state OR ?id= query param, auto-open that project in preview once projects are loaded
   useEffect(() => {
@@ -174,57 +98,11 @@ const ProjectsPage = () => {
   }, []);
 
   const removeProject = (id) => {
-    const toDelete = Array.isArray(savedProjects) ? savedProjects.find((p) => p.id === id) : null;
-    const filtered = Array.isArray(savedProjects) ? savedProjects.filter((p) => p.id !== id) : [];
-    try {
-      localStorage.setItem('dt_projects', JSON.stringify(filtered));
-    } catch (e) {
-      alert('Could not update stored projects because browser storage is full. Try deleting some projects or clearing site data.');
-    }
-    setSavedProjects(filtered);
-
-    if (toDelete) {
-      notifySystem('Project Deleted', `Project "${toDelete.title || 'Untitled Project'}" has been deleted.`, 'info');
-    } else {
-      notifySystem('Project Deleted', 'A project has been deleted.', 'info');
-    }
-  };
-
-  const openAdd = () => {
-    setEditing(null);
-    setShowModal(true);
-  };
-
-  const openEdit = (project) => {
-    setEditing(project);
-    setShowModal(true);
-  };
-
-  const closeModal = () => setShowModal(false);
-
-  const saveProject = (project) => {
-    const exists = Array.isArray(savedProjects) && savedProjects.some((p) => p.id === project.id);
-    let updated = [];
-    if (exists) {
-      updated = savedProjects.map((p) => (p.id === project.id ? project : p));
-    } else {
-      updated = [project, ...(Array.isArray(savedProjects) ? savedProjects : [])];
-    }
-    try {
-      localStorage.setItem('dt_projects', JSON.stringify(updated));
-    } catch (e) {
-      alert('Could not save project because browser storage is full. Try deleting some projects or clearing site data.');
+    if (isCatalogProject(id)) {
+      notifySystem('Not Editable', 'This project is part of the main catalog and must be changed in the repository.', 'info');
       return;
     }
-    setSavedProjects(updated);
-    setShowModal(false);
-
-    const isNew = !exists;
-    notifySystem(
-      isNew ? 'Project Saved' : 'Project Updated',
-      `Project "${project.title || 'Untitled Project'}" has been ${isNew ? 'created' : 'updated'}.`,
-      'success'
-    );
+    notifySystem('Not Editable', 'This site uses a repo-backed catalog. To delete a project, edit src/data/projectsCatalog.js and redeploy.', 'info');
   };
 
   const openPreview = (project) => {
@@ -455,7 +333,7 @@ const ProjectsPage = () => {
               {editMode && (
                 <>
                   <button
-                    onClick={openAdd}
+                    onClick={() => notifySystem('Repo Update Required', 'To add a project for everyone, edit src/data/projectsCatalog.js and redeploy.', 'info')}
                     className="shrink-0 rounded-full bg-black text-white px-6 py-3"
                     style={{ fontFamily: 'Poppins, ui-sans-serif', fontSize: 24 }}
                   >
@@ -560,7 +438,7 @@ const ProjectsPage = () => {
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
-                            openEdit(p);
+                            notifySystem('Not Editable', 'This project is part of the main catalog and must be changed in the repository.', 'info');
                           }}
                           className="rounded-full bg-black text-white px-3 py-1 text-sm"
                         >
@@ -569,7 +447,7 @@ const ProjectsPage = () => {
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
-                            removeProject(p.id);
+                            notifySystem('Not Editable', 'This site uses a repo-backed catalog. To delete a project, edit src/data/projectsCatalog.js and redeploy.', 'info');
                           }}
                           className="rounded-full bg-white text-black border border-black/10 px-3 py-1 text-sm"
                         >
@@ -647,7 +525,7 @@ const ProjectsPage = () => {
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
-                            openEdit(p);
+                            notifySystem('Not Editable', 'This project is part of the main catalog and must be changed in the repository.', 'info');
                           }}
                           className="rounded-full bg-black text-white px-3 py-1 text-sm"
                         >
@@ -656,7 +534,7 @@ const ProjectsPage = () => {
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
-                            removeProject(p.id);
+                            notifySystem('Not Editable', 'This site uses a repo-backed catalog. To delete a project, edit src/data/projectsCatalog.js and redeploy.', 'info');
                           }}
                           className="rounded-full bg-white text-black border border-black/10 px-3 py-1 text-sm"
                         >
@@ -734,22 +612,9 @@ const ProjectsPage = () => {
         </div>
       </div>
 
-      {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div className="absolute inset-0 bg-black/50" onClick={closeModal} />
-          <div className="relative z-10 w-[95vw] max-w-3xl">
-            <AddProjectForm
-              initialData={editing}
-              onCancel={closeModal}
-              onSave={saveProject}
-            />
-          </div>
-        </div>
-      )}
-
       {previewing && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div className="absolute inset-0 bg-black/60 transition-opacity duration-300" onClick={closePreview} />
+          <div className="absolute inset-0 bg-black/60" onClick={closePreview} />
           <div
             ref={previewScrollRef}
             className="relative z-10 w-[96vw] max-w-6xl max-h-[90vh] bg-white rounded-2xl overflow-y-auto flex flex-col transform transition-transform duration-300 ease-out scale-100"

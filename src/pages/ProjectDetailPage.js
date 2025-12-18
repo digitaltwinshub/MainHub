@@ -1,18 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import { getProjectById } from '../data/projectsCatalog';
 
 const ProjectDetailPage = () => {
   const { id } = useParams();
   const [project, setProject] = useState(null);
 
   useEffect(() => {
-    try {
-      const stored = JSON.parse(window.localStorage.getItem('dt_projects') || '[]');
-      const found = stored.find((p) => String(p.id) === String(id));
-      setProject(found || null);
-    } catch {
-      setProject(null);
-    }
+    setProject(getProjectById(id));
   }, [id]);
 
   if (!project) {

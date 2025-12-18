@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import { PROJECTS_CATALOG } from '../data/projectsCatalog';
 
 const TEAM_STORAGE_KEY = 'dt_team_members';
 
@@ -187,7 +188,7 @@ const TeamMemberPage = () => {
   useEffect(() => {
     if (!memberName) return;
     try {
-      const stored = JSON.parse(localStorage.getItem('dt_projects') || '[]');
+      const stored = Array.isArray(PROJECTS_CATALOG) ? PROJECTS_CATALOG : [];
       const normalizedName = memberName.trim().toLowerCase();
       const filtered = stored.filter((p) => (p.owner || '').trim().toLowerCase() === normalizedName);
       setMemberProjects(filtered);

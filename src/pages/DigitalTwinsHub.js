@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { PROJECTS_CATALOG } from '../data/projectsCatalog';
 
 const DigitalTwinsHub = () => {
   const [mounted, setMounted] = useState(false);
@@ -46,31 +47,17 @@ const DigitalTwinsHub = () => {
   const [projectOfMonth, setProjectOfMonth] = useState(null);
 
   useEffect(() => {
-    try {
-      if (typeof window === 'undefined' || !window.localStorage) {
-        setSavedProjects([]);
-        return;
-      }
-      const stored = JSON.parse(window.localStorage.getItem('dt_projects') || '[]');
-      if (!Array.isArray(stored) || stored.length === 0) {
-        setSavedProjects([]);
-        return;
-      }
+    const catalog = Array.isArray(PROJECTS_CATALOG) ? PROJECTS_CATALOG : [];
+    setSavedProjects(catalog);
 
-      setSavedProjects(stored);
+    const shuffled = [...catalog].sort(() => Math.random() - 0.5);
 
-      const shuffled = [...stored].sort(() => Math.random() - 0.5);
+    const flagship = shuffled.filter((p) => p && p.projectType === 'flagship');
+    const sourceForFeatured = flagship.length > 0 ? flagship : shuffled;
+    const pickedFeatured = sourceForFeatured.slice(0, Math.min(3, sourceForFeatured.length));
+    setFeaturedProjects(pickedFeatured);
 
-      // Prefer flagship projects for Featured Projects; fall back to any projects
-      const flagship = shuffled.filter((p) => p && p.projectType === 'flagship');
-      const sourceForFeatured = flagship.length > 0 ? flagship : shuffled;
-      const pickedFeatured = sourceForFeatured.slice(0, Math.min(3, sourceForFeatured.length));
-      setFeaturedProjects(pickedFeatured);
-
-      setProjectOfMonth(shuffled[0]);
-    } catch {
-      setSavedProjects([]);
-    }
+    setProjectOfMonth(shuffled[0] || null);
   }, []);
 
   useEffect(() => {
