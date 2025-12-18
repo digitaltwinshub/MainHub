@@ -30,6 +30,7 @@ const initialState = {
 export default function AddProjectForm({ initialData, onCancel, onSave }) {
   const [form, setForm] = useState(initialState);
   const [saving, setSaving] = useState(false);
+  const [fetchingRepo, setFetchingRepo] = useState(false);
 
   useEffect(() => {
     if (initialData) {
@@ -69,6 +70,70 @@ export default function AddProjectForm({ initialData, onCancel, onSave }) {
   const onChange = (e) => {
     const { name, value } = e.target;
     setForm((f) => ({ ...f, [name]: value }));
+  };
+
+  const parseGitHubRepo = (url) => {
+    const raw = String(url || '').trim();
+    if (!raw) return null;
+    try {
+      const u = new URL(raw);
+      // Standard GitHub repo URL: https://github.com/owner/repo
+      if (/github\.com$/i.test(u.hostname)) {
+        const parts = u.pathname.split('/').filter(Boolean);
+        if (parts.length < 2) return null;
+        return { owner: parts[0], repo: parts[1].replace(/\.git$/i, '') };
+      }
+
+      // GitHub Pages URL: https://owner.github.io/repo/
+      if (/\.github\.io$/i.test(u.hostname)) {
+        const owner = u.hostname.replace(/\.github\.io$/i, '');
+        const parts = u.pathname.split('/').filter(Boolean);
+        if (parts.length < 1) return null;
+        const repo = parts[0];
+        return { owner, repo };
+      }
+
+      return null;
+    } catch {
+      return null;
+    }
+  };
+
+  const githubOgImage = (owner, repo) => `https://opengraph.githubassets.com/1/${owner}/${repo}`;
+
+  const fetchFromGitHub = async () => {
+    const parsed = parseGitHubRepo(form.repoUrl);
+    if (!parsed) {
+      alert('Please enter a valid GitHub repository URL like https://github.com/owner/repo');
+      return;
+    }
+    setFetchingRepo(true);
+    try {
+      const res = await fetch(`https://api.github.com/repos/${parsed.owner}/${parsed.repo}`);
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(`${res.status} ${text}`);
+      }
+      const repo = await res.json();
+      setForm((f) => ({
+        ...f,
+        title: f.title && f.title.trim() ? f.title : (repo && repo.name ? String(repo.name) : f.title),
+        owner: f.owner && f.owner.trim() ? f.owner : (repo && repo.owner && repo.owner.login ? String(repo.owner.login) : f.owner),
+        goal: f.goal && f.goal.trim() ? f.goal : (repo && repo.description ? String(repo.description) : f.goal),
+        imageLink: f.imageLink && f.imageLink.trim() ? f.imageLink : githubOgImage(parsed.owner, parsed.repo),
+      }));
+    } catch (e) {
+      alert(`Could not fetch GitHub repository info. ${e && e.message ? e.message : ''}`);
+      const parsedFallback = parseGitHubRepo(form.repoUrl);
+      if (parsedFallback) {
+        setForm((f) => ({
+          ...f,
+          imageLink: f.imageLink && f.imageLink.trim() ? f.imageLink : githubOgImage(parsedFallback.owner, parsedFallback.repo),
+        }));
+      }
+    } finally {
+      setFetchingRepo(false);
+    }
   };
 
   const handleSave = async () => {
@@ -179,13 +244,23 @@ export default function AddProjectForm({ initialData, onCancel, onSave }) {
             </div>
             <div>
               <label className={labelCls}>Repository / Link</label>
-              <input
-                name="repoUrl"
-                value={form.repoUrl || ''}
-                onChange={onChange}
-                className={inputCls}
-                placeholder="https://github.com/... or any project link"
-              />
+              <div className="flex items-center gap-2">
+                <input
+                  name="repoUrl"
+                  value={form.repoUrl || ''}
+                  onChange={onChange}
+                  className={inputCls}
+                  placeholder="https://github.com/... or any project link"
+                />
+                <button
+                  type="button"
+                  onClick={fetchFromGitHub}
+                  disabled={fetchingRepo || !String(form.repoUrl || '').trim()}
+                  className="shrink-0 rounded-full bg-black text-white px-4 py-2 text-sm disabled:opacity-50"
+                >
+                  {fetchingRepo ? 'Fetching…' : 'Fetch'}
+                </button>
+              </div>
             </div>
             <div>
               <label className={labelCls}>Goal <span className="text-red-500">*</span></label>

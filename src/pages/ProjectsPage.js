@@ -232,6 +232,40 @@ const ProjectsPage = () => {
   };
   const closePreview = () => setPreviewing(null);
 
+  const getGitHubOgImage = (repoUrl) => {
+    try {
+      const u = new URL(String(repoUrl || ''));
+      // Standard GitHub repo URL: https://github.com/owner/repo
+      if (/github\.com$/i.test(u.hostname)) {
+        const parts = u.pathname.split('/').filter(Boolean);
+        if (parts.length < 2) return '';
+        const owner = parts[0];
+        const repo = parts[1].replace(/\.git$/i, '');
+        return `https://opengraph.githubassets.com/1/${owner}/${repo}`;
+      }
+
+      // GitHub Pages URL: https://owner.github.io/repo/
+      if (/\.github\.io$/i.test(u.hostname)) {
+        const owner = u.hostname.replace(/\.github\.io$/i, '');
+        const parts = u.pathname.split('/').filter(Boolean);
+        if (parts.length < 1) return '';
+        const repo = parts[0];
+        return `https://opengraph.githubassets.com/1/${owner}/${repo}`;
+      }
+
+      return '';
+    } catch {
+      return '';
+    }
+  };
+
+  const getProjectImage = (project) => {
+    if (!project) return '';
+    if (project.image) return project.image;
+    if (project.repoUrl) return getGitHubOgImage(project.repoUrl);
+    return '';
+  };
+
   // Restore preview scroll position when opening
   useEffect(() => {
     if (!previewing) return;
@@ -511,8 +545,8 @@ const ProjectsPage = () => {
                   onClick={() => openPreview(p)}
                 >
                   <div className="h-44 w-full overflow-hidden bg-white/40 flex items-center justify-center text-black/50">
-                    {p.image ? (
-                      <img src={p.image} alt={p.title || 'project image'} className="w-full h-full object-cover transform transition-transform duration-500 group-hover:scale-105" />
+                    {getProjectImage(p) ? (
+                      <img src={getProjectImage(p)} alt={p.title || 'project image'} className="w-full h-full object-cover transform transition-transform duration-500 group-hover:scale-105" />
                     ) : (
                       'No image'
                     )}
@@ -598,8 +632,8 @@ const ProjectsPage = () => {
                   onClick={() => openPreview(p)}
                 >
                   <div className="h-44 w-full overflow-hidden bg-white/40 flex items-center justify-center text-black/50">
-                    {p.image ? (
-                      <img src={p.image} alt={p.title || 'project image'} className="w-full h-full object-cover transform transition-transform duration-500 group-hover:scale-105" />
+                    {getProjectImage(p) ? (
+                      <img src={getProjectImage(p)} alt={p.title || 'project image'} className="w-full h-full object-cover transform transition-transform duration-500 group-hover:scale-105" />
                     ) : (
                       'No image'
                     )}
@@ -646,7 +680,7 @@ const ProjectsPage = () => {
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
-                            notifySystem('Not Editable', 'This project is part of the main catalog and must be changed in the repository.', 'info');
+                            openEdit(p);
                           }}
                           className="rounded-full bg-black text-white px-3 py-1 text-sm"
                         >
@@ -736,9 +770,9 @@ const ProjectsPage = () => {
             className="relative z-10 w-[96vw] max-w-6xl max-h-[90vh] bg-white rounded-2xl overflow-y-auto flex flex-col transform transition-transform duration-300 ease-out scale-100"
           >
             <div className="bg-white/95 backdrop-blur border-b border-black/10">
-              {previewing.image ? (
+              {getProjectImage(previewing) ? (
                 <div className="h-36 sm:h-44 lg:h-48 w-full overflow-hidden bg-black/5">
-                  <img src={previewing.image} alt={previewing.title || 'preview image'} className="w-full h-full object-cover" />
+                  <img src={getProjectImage(previewing)} alt={previewing.title || 'preview image'} className="w-full h-full object-cover" />
                 </div>
               ) : null}
               <div className="px-5 py-4 md:px-7 md:py-5 lg:px-8 lg:py-6">

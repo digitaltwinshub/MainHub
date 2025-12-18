@@ -7,6 +7,35 @@ const ProjectDetailPage = () => {
   const { id } = useParams();
   const [project, setProject] = useState(null);
 
+  const getGitHubOgImage = (repoUrl) => {
+    try {
+      const u = new URL(String(repoUrl || ''));
+      // Standard GitHub repo URL: https://github.com/owner/repo
+      if (/github\.com$/i.test(u.hostname)) {
+        const parts = u.pathname.split('/').filter(Boolean);
+        if (parts.length < 2) return '';
+        const owner = parts[0];
+        const repo = parts[1].replace(/\.git$/i, '');
+        return `https://opengraph.githubassets.com/1/${owner}/${repo}`;
+      }
+
+      // GitHub Pages URL: https://owner.github.io/repo/
+      if (/\.github\.io$/i.test(u.hostname)) {
+        const owner = u.hostname.replace(/\.github\.io$/i, '');
+        const parts = u.pathname.split('/').filter(Boolean);
+        if (parts.length < 1) return '';
+        const repo = parts[0];
+        return `https://opengraph.githubassets.com/1/${owner}/${repo}`;
+      }
+
+      return '';
+    } catch {
+      return '';
+    }
+  };
+
+  const projectImage = project && project.image ? project.image : (project && project.repoUrl ? getGitHubOgImage(project.repoUrl) : '');
+
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -87,9 +116,9 @@ const ProjectDetailPage = () => {
           </Link>
         </div>
 
-        {project.image && (
+        {projectImage && (
           <div className="mb-6 w-full overflow-hidden rounded-2xl bg-black/5">
-            <img src={project.image} alt={project.title} className="w-full max-h-[360px] object-cover" />
+            <img src={projectImage} alt={project.title} className="w-full max-h-[360px] object-cover" />
           </div>
         )}
 
