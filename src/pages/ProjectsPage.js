@@ -5,6 +5,7 @@ import { useNotifications } from '../context/NotificationContext';
 import AddProjectForm from '../components/AddProjectForm';
 import { PROJECTS_CATALOG } from '../data/projectsCatalog';
 import { fetchRemoteProjects, isSupabaseConfigured, upsertRemoteProject } from '../data/projectsRemote';
+import { supabase } from '../supabaseClient';
 
 const TEAM_STORAGE_KEY = 'dt_team_members';
 const PROJECTS_STORAGE_KEY = 'dt_projects';
@@ -31,6 +32,16 @@ const ProjectsPage = () => {
   // Hooks must be called unconditionally
   const { notifySystem } = useNotifications();
   const location = useLocation();
+
+  useEffect(() => {
+    if (!isSupabaseConfigured()) return;
+    async function test() {
+      const { data, error } = await supabase.from('projects').select('*').limit(1);
+      // eslint-disable-next-line no-console
+      console.log('Supabase test:', data, error);
+    }
+    test();
+  }, []);
 
   // Load repo-backed catalog projects (always available) + locally saved projects
   useEffect(() => {
