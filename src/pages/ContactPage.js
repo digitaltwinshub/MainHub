@@ -64,10 +64,10 @@ const ContactPage = () => {
         <div className="max-w-7xl mx-auto px-6 py-16 md:py-24">
           <h2
             ref={missionTitleRef}
-            className={`text-center text-black leading-tight transition-all duration-700 ease-out ${
+            className={`text-center text-black leading-tight text-4xl sm:text-5xl md:text-7xl transition-all duration-700 ease-out ${
               missionInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
             }`}
-            style={{ fontFamily: 'Poppins, ui-sans-serif', fontWeight: 400, fontSize: 96, lineHeight: 1.05 }}
+            style={{ fontFamily: 'Poppins, ui-sans-serif', fontWeight: 400, lineHeight: 1.05 }}
           >
             Our Mission
           </h2>

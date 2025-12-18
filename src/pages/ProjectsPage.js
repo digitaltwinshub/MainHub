@@ -264,8 +264,8 @@ const ProjectsPage = () => {
     >
       <div className="max-w-7xl mx-auto px-6 py-10 relative">
         <h1
-          className="text-black"
-          style={{ fontFamily: 'Taygiacs, Poppins, ui-sans-serif', fontWeight: 400, fontSize: 88, lineHeight: 1 }}
+          className="text-black text-4xl sm:text-5xl md:text-7xl"
+          style={{ fontFamily: 'Taygiacs, Poppins, ui-sans-serif', fontWeight: 400, lineHeight: 1 }}
         >
           Projects
         </h1>
