@@ -1,13 +1,47 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { getProjectById } from '../data/projectsCatalog';
+import { fetchRemoteProjectById, isSupabaseConfigured } from '../data/projectsRemote';
 
 const ProjectDetailPage = () => {
   const { id } = useParams();
   const [project, setProject] = useState(null);
 
   useEffect(() => {
-    setProject(getProjectById(id));
+    let cancelled = false;
+    (async () => {
+      const catalog = getProjectById(id);
+      if (catalog) {
+        if (!cancelled) setProject(catalog);
+        return;
+      }
+
+      // Try shared DB first
+      try {
+        if (isSupabaseConfigured()) {
+          const remote = await fetchRemoteProjectById(id);
+          if (remote) {
+            if (!cancelled) setProject(remote);
+            return;
+          }
+        }
+      } catch (e) {
+        // ignore and try local
+      }
+
+      // Fallback to local cache
+      try {
+        const raw = localStorage.getItem('dt_projects');
+        const stored = raw ? JSON.parse(raw) : [];
+        const found = Array.isArray(stored) ? stored.find((p) => String(p.id) === String(id)) : null;
+        if (!cancelled) setProject(found || null);
+      } catch (e) {
+        if (!cancelled) setProject(null);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, [id]);
 
   if (!project) {

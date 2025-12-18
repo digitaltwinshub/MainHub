@@ -2,9 +2,12 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { jsPDF } from 'jspdf';
 import { useNotifications } from '../context/NotificationContext';
+import AddProjectForm from '../components/AddProjectForm';
 import { PROJECTS_CATALOG } from '../data/projectsCatalog';
+import { fetchRemoteProjects, isSupabaseConfigured, upsertRemoteProject } from '../data/projectsRemote';
 
 const TEAM_STORAGE_KEY = 'dt_team_members';
+const PROJECTS_STORAGE_KEY = 'dt_projects';
 
 const FALLBACK_MEMBERS = [
   { name: 'Meri Sargsian', role: 'ShadeLA ProjectHUB', img: 'https://placehold.co/254x240', slug: 'meri-sargsian' },
@@ -23,23 +26,91 @@ const ProjectsPage = () => {
   const [teamMembers, setTeamMembers] = useState(FALLBACK_MEMBERS);
   const [mounted, setMounted] = useState(false);
   const [editMode, setEditMode] = useState(false); // public view vs admin edit
+  const [showProjectForm, setShowProjectForm] = useState(false);
+  const [editingProject, setEditingProject] = useState(null);
   // Hooks must be called unconditionally
   const { notifySystem } = useNotifications();
   const location = useLocation();
 
-  // Load repo-backed catalog projects (always available)
+  // Load repo-backed catalog projects (always available) + locally saved projects
   useEffect(() => {
-    try {
-      const base = Array.isArray(PROJECTS_CATALOG) ? PROJECTS_CATALOG : [];
-      setSavedProjects(base);
-    } catch (e) {
-      setSavedProjects([]);
-    }
+    let cancelled = false;
+
+    const mergeProjects = (base, stored) => {
+      const baseById = new Map((Array.isArray(base) ? base : []).map((p) => [String(p.id), p]));
+      const storedById = new Map(
+        (Array.isArray(stored) ? stored : [])
+          .filter((p) => p && (p.id !== undefined && p.id !== null))
+          .map((p) => [String(p.id), p])
+      );
+      const mergedIds = new Set([...baseById.keys(), ...storedById.keys()]);
+      return Array.from(mergedIds)
+        .map((id) => storedById.get(id) || baseById.get(id))
+        .filter(Boolean);
+    };
+
+    (async () => {
+      try {
+        const base = Array.isArray(PROJECTS_CATALOG) ? PROJECTS_CATALOG : [];
+
+        // First paint: merge catalog + local cache so UI shows something immediately.
+        let localStored = [];
+        try {
+          const raw = localStorage.getItem(PROJECTS_STORAGE_KEY);
+          localStored = raw ? JSON.parse(raw) : [];
+        } catch (e) {
+          localStored = [];
+        }
+
+        if (!cancelled) {
+          setSavedProjects(mergeProjects(base, localStored));
+        }
+
+        // If configured, load shared projects from Supabase and merge them in.
+        if (isSupabaseConfigured()) {
+          const remote = await fetchRemoteProjects();
+          if (!cancelled) {
+            const merged = mergeProjects(base, remote);
+            setSavedProjects(merged);
+            // Cache remote locally as fallback
+            persistStoredProjects(merged);
+          }
+        }
+      } catch (e) {
+        if (!cancelled) setSavedProjects([]);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const isCatalogProject = (id) => {
     const base = Array.isArray(PROJECTS_CATALOG) ? PROJECTS_CATALOG : [];
     return base.some((p) => String(p.id) === String(id));
+  };
+
+  const persistStoredProjects = (nextProjects) => {
+    const base = Array.isArray(PROJECTS_CATALOG) ? PROJECTS_CATALOG : [];
+    const baseById = new Map(base.map((p) => [String(p.id), p]));
+
+    const stored = (Array.isArray(nextProjects) ? nextProjects : [])
+      .filter((p) => p && (p.id !== undefined && p.id !== null))
+      .filter((p) => {
+        const baseItem = baseById.get(String(p.id));
+        if (!baseItem) return true;
+        return (
+          String(baseItem.status || '') !== String(p.status || '') ||
+          String(baseItem.projectType || '') !== String(p.projectType || '')
+        );
+      });
+
+    try {
+      localStorage.setItem(PROJECTS_STORAGE_KEY, JSON.stringify(stored));
+    } catch (err) {
+      alert('Could not save projects because browser storage is full. Try deleting some projects or clearing site data.');
+    }
   };
 
   // If navigated here with a projectId in router state OR ?id= query param, auto-open that project in preview once projects are loaded
@@ -103,6 +174,56 @@ const ProjectsPage = () => {
       return;
     }
     notifySystem('Not Editable', 'This site uses a repo-backed catalog. To delete a project, edit src/data/projectsCatalog.js and redeploy.', 'info');
+  };
+
+  const openEdit = (project) => {
+    if (!project || project.id === undefined || project.id === null) return;
+    if (isCatalogProject(project.id)) {
+      notifySystem('Not Editable', 'This project is part of the main catalog and must be changed in the repository.', 'info');
+      return;
+    }
+    setEditingProject(project);
+    setShowProjectForm(true);
+  };
+
+  const openAdd = () => {
+    setEditingProject(null);
+    setShowProjectForm(true);
+  };
+
+  const upsertProject = async (project) => {
+    const draftId = project && project.id !== undefined && project.id !== null ? project.id : Date.now();
+    const optimistic = { ...project, id: draftId, updatedAt: new Date().toISOString() };
+
+    const optimisticNext = (Array.isArray(savedProjects) ? savedProjects : [])
+      .filter((p) => p && String(p.id) !== String(optimistic.id))
+      .concat(optimistic);
+
+    setSavedProjects(optimisticNext);
+    persistStoredProjects(optimisticNext);
+
+    try {
+      if (isSupabaseConfigured()) {
+        const saved = await upsertRemoteProject(optimistic);
+        if (saved && saved.id !== undefined && saved.id !== null) {
+          const next = (Array.isArray(savedProjects) ? savedProjects : [])
+            .filter((p) => p && String(p.id) !== String(optimistic.id))
+            .concat(saved);
+          setSavedProjects(next);
+          persistStoredProjects(next);
+        }
+      }
+    } catch (e) {
+      notifySystem('Save Failed', 'Could not sync this project to the shared database. It was saved only on this device.', 'error');
+    }
+
+    try {
+      localStorage.removeItem('dt_project_draft');
+    } catch (e) {
+      // ignore
+    }
+    setShowProjectForm(false);
+    setEditingProject(null);
   };
 
   const openPreview = (project) => {
@@ -333,7 +454,7 @@ const ProjectsPage = () => {
               {editMode && (
                 <>
                   <button
-                    onClick={() => notifySystem('Repo Update Required', 'To add a project for everyone, edit src/data/projectsCatalog.js and redeploy.', 'info')}
+                    onClick={openAdd}
                     className="shrink-0 rounded-full bg-black text-white px-6 py-3"
                     style={{ fontFamily: 'Poppins, ui-sans-serif', fontSize: 24 }}
                   >
@@ -438,7 +559,7 @@ const ProjectsPage = () => {
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
-                            notifySystem('Not Editable', 'This project is part of the main catalog and must be changed in the repository.', 'info');
+                            openEdit(p);
                           }}
                           className="rounded-full bg-black text-white px-3 py-1 text-sm"
                         >
@@ -562,13 +683,8 @@ const ProjectsPage = () => {
                     const proj = (Array.isArray(savedProjects) ? savedProjects.find((x) => x.id === id) : null);
                     if (!proj) return;
                     const updated = (Array.isArray(savedProjects) ? savedProjects.map((x) => x.id === id ? { ...x, status: col } : x) : []);
-                    try {
-                      localStorage.setItem('dt_projects', JSON.stringify(updated));
-                    } catch (err) {
-                      alert('Could not update project status because browser storage is full. Try deleting some projects or clearing site data.');
-                      return;
-                    }
                     setSavedProjects(updated);
+                    persistStoredProjects(updated);
                   }}
                 >
                   <div className="flex items-center justify-between mb-3">
@@ -785,6 +901,22 @@ const ProjectsPage = () => {
                 </div>
               )}
             </div>
+          </div>
+        </div>
+      )}
+
+      {showProjectForm && (
+        <div className="fixed inset-0 z-50 flex items-start justify-center pt-10 md:pt-16">
+          <div className="absolute inset-0 bg-black/60" onClick={() => setShowProjectForm(false)} />
+          <div className="relative z-10 max-w-4xl w-[92vw]">
+            <AddProjectForm
+              initialData={editingProject}
+              onCancel={() => {
+                setShowProjectForm(false);
+                setEditingProject(null);
+              }}
+              onSave={upsertProject}
+            />
           </div>
         </div>
       )}
