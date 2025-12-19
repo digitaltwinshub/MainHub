@@ -106,15 +106,40 @@ const ProjectsPage = () => {
     const base = Array.isArray(PROJECTS_CATALOG) ? PROJECTS_CATALOG : [];
     const baseById = new Map(base.map((p) => [String(p.id), p]));
 
+    const hasDifferences = (baseItem, edited) => {
+      if (!baseItem) return true;
+      const keysToCompare = [
+        'title',
+        'category',
+        'owner',
+        'repoUrl',
+        'goal',
+        'image',
+        'videoUrl',
+        'status',
+        'projectType',
+        'teamMemberFirstName',
+        'teamMemberLastName',
+        'teamMemberRole',
+        'teamMemberDescription',
+        'structureCapabilities',
+        'keyFeatures',
+        'fileStructure',
+        'modules',
+        'moduleFunctions',
+        'impactData',
+        'problem',
+        'dataTypes',
+        'conclusion',
+      ];
+      return keysToCompare.some((k) => String((baseItem && baseItem[k]) || '') !== String((edited && edited[k]) || ''));
+    };
+
     const stored = (Array.isArray(nextProjects) ? nextProjects : [])
       .filter((p) => p && (p.id !== undefined && p.id !== null))
       .filter((p) => {
         const baseItem = baseById.get(String(p.id));
-        if (!baseItem) return true;
-        return (
-          String(baseItem.status || '') !== String(p.status || '') ||
-          String(baseItem.projectType || '') !== String(p.projectType || '')
-        );
+        return hasDifferences(baseItem, p);
       });
 
     try {
@@ -189,10 +214,6 @@ const ProjectsPage = () => {
 
   const openEdit = (project) => {
     if (!project || project.id === undefined || project.id === null) return;
-    if (isCatalogProject(project.id)) {
-      notifySystem('Not Editable', 'This project is part of the main catalog and must be changed in the repository.', 'info');
-      return;
-    }
     setEditingProject(project);
     setShowProjectForm(true);
   };
@@ -913,8 +934,8 @@ const ProjectsPage = () => {
               <div className="mt-6 flex flex-wrap items-center gap-3">
                 <button
                   onClick={() => {
-                    setPreviewing(null);
                     openEdit(previewing);
+                    setPreviewing(null);
                   }}
                   className="rounded-full bg-black text-white px-4 py-2 text-sm"
                 >
@@ -951,7 +972,7 @@ const ProjectsPage = () => {
       )}
 
       {showProjectForm && (
-        <div className="fixed inset-0 z-50 flex items-start justify-center pt-10 md:pt-16">
+        <div className="fixed inset-0 z-[60] flex items-start justify-center pt-10 md:pt-16">
           <div className="absolute inset-0 bg-black/60" onClick={() => setShowProjectForm(false)} />
           <div className="relative z-10 max-w-4xl w-[92vw]">
             <AddProjectForm
